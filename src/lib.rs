@@ -1,4 +1,4 @@
-use std::ops::{Index, IndexMut};
+use std::ops::{Index, IndexMut, Not};
 
 #[derive(Clone, Debug)]
 pub struct Universe {
@@ -9,6 +9,7 @@ pub struct Universe {
 }
 
 /// Coordinates, stored as a (row, column) tuple
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Coord {
     row: usize, 
     col: usize,
@@ -39,6 +40,23 @@ impl Universe {
         Self { cells, height, width }
     }
 
+    pub fn set_dimensions(&mut self, new_dims: Coord) {
+        let old = self.clone();
+        let mut new = Self {
+            cells: vec![Cell::Dead; new_dims.row*new_dims.col],
+            height: new_dims.row,
+            width: new_dims.col,
+        };
+
+        for old_y in 0..(old.height.min(new.height)) {
+            for old_x in 0..(old.width.min(new.width)) {
+                let coords = Coord::new(old_y, old_x);
+                new[coords] = old[coords];
+            }
+        }
+
+        *self = new;
+    }
     pub fn get_width(&self) -> usize {
         self.width
     }
@@ -47,6 +65,9 @@ impl Universe {
     }
     pub fn render(&self) -> String {
         self.to_string()
+    }
+    pub fn toggle_pixel(&mut self, c: Coord) {
+        self[c] = !self[c];
     }
     pub fn set_pixel(&mut self, c: Coord, val: Cell) {
         self[c] = val
@@ -141,5 +162,16 @@ impl IndexMut<Coord> for Universe {
     fn index_mut(&mut self, index: Coord) -> &mut Self::Output {
         let idx = self.coord_to_idx(index);
         &mut self.cells[idx]
+    }
+}
+
+impl Not for Cell {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        match self {
+            Cell::Dead  => Cell::Alive,
+            Cell::Alive => Cell::Dead,
+        }
     }
 }
