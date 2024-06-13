@@ -15,10 +15,10 @@ async fn main() {
     let text_color               = Color::from_rgba(198, 160, 246, 200);
     let mut time_between_ticks   = 0.3;                                  // In seconds;
     let time_between_ticks_delta = 0.01;                                 // In seconds
-    let bare_universe = Universe::new(screen_width() as usize / grid_spacing, screen_height() as usize / grid_spacing);
+    let bare_universe = || Universe::new(screen_width() as usize / grid_spacing, screen_height() as usize / grid_spacing);
 
     // Simulation
-    let mut universe = bare_universe.clone();
+    let mut universe = bare_universe();
     let mut paused = true;
     let mut frames_since_last_tick = 0;
 
@@ -36,7 +36,7 @@ async fn main() {
         }
 
         if is_key_pressed(KeyCode::Space) { paused = !paused; }
-        if is_key_down(KeyCode::R)        { universe = bare_universe.clone(); }
+        if is_key_down(KeyCode::R)        { universe = bare_universe(); }
         if is_key_down(KeyCode::D)        { time_between_ticks += time_between_ticks_delta; }
         if is_key_down(KeyCode::U)        {
             time_between_ticks = (time_between_ticks - time_between_ticks_delta).max(0.0);
@@ -102,7 +102,7 @@ fn window_conf() -> Conf {
     Conf {
         window_title: "Game of Life".to_owned(),
         fullscreen: false,
-        window_resizable: false,
+        window_resizable: true,
         window_width: 1080,
         window_height: 720,
         ..Default::default()
