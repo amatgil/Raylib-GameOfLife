@@ -1,4 +1,4 @@
-use ray_game_of_life::{Cell, Coord, Universe};
+use gameoflife::{Cell, Coord, Universe};
 use macroquad::{prelude::*, text};
 
 
@@ -9,7 +9,7 @@ async fn main() {
     let background_color         = Color::from_rgba(24, 25, 38, 255);
     let grid_thickness           = 2.5;
     let grid_color               = Color::from_rgba(138, 173, 244, 255);
-    let grid_spacing             = 40;
+    let grid_spacing             = 30;
     let alive_color              = Color::from_rgba(145, 215, 227, 255); // Lavander
     let dead_color               = Color::from_rgba(0, 0, 0, 0);         // Transparent
     let text_color               = Color::from_rgba(198, 160, 246, 200);
@@ -55,24 +55,25 @@ async fn main() {
 
         draw_universe(&universe, grid_spacing, alive_color, dead_color);
         draw_grid(grid_thickness, grid_color, grid_spacing);
-        draw_controls(text_color, time_between_ticks, paused);
+        draw_controls(text_color, time_between_ticks, paused, grid_spacing);
 
         next_frame().await
     }
 }
 
-fn draw_controls(text_color: Color, time_between_ticks: f32, paused: bool) {
+fn draw_controls(text_color: Color, time_between_ticks: f32, paused: bool, grid_spacing: usize) {
+    let grid_spacing = grid_spacing as f32;
     let tps = (time_between_ticks + 1.0) / (1.0/get_fps() as f32 + time_between_ticks);
-    let is_p = if paused { "Y" } else { "N" };
+    let is_p = if paused { "On" } else { "Off" };
 
     draw_rectangle(0.0, 0.0,
-                    320.0, 40.0*6.0,
+                    grid_spacing*10.0, grid_spacing*7.0,
                     Color::from_rgba(0, 0, 0, 200));
-    draw_text("U: Increase Speed",                     10.0, 30.0 + 0.0*40.0, 40.0, text_color);
-    draw_text("D: Decrease Speed",                     10.0, 30.0 + 1.0*40.0, 40.0, text_color);
-    draw_text("R: Reset",                              10.0, 30.0 + 2.0*40.0, 40.0, text_color);
-    draw_text(&format!("Space: Pause ({is_p})"),       10.0, 30.0 + 3.0*40.0, 40.0, text_color);
-    draw_text(&format!("Speed: {tps:.2} tps",),    10.0, 30.0 + 5.0*40.0, 40.0, text_color);
+    draw_text("U: Increase Speed",                 10.0, grid_spacing*0.8 + 0.0*grid_spacing, grid_spacing, text_color);
+    draw_text("D: Decrease Speed",                 10.0, grid_spacing*0.8 + 1.0*grid_spacing, grid_spacing, text_color);
+    draw_text("R: Reset",                          10.0, grid_spacing*0.8 + 2.0*grid_spacing, grid_spacing, text_color);
+    draw_text(&format!("Space: Pause ({is_p})"),   10.0, grid_spacing*0.8 + 3.0*grid_spacing, grid_spacing, text_color);
+    draw_text(&format!("Speed: {tps:.2} tps",),    10.0, grid_spacing*0.8 + 5.0*grid_spacing, grid_spacing, text_color);
 }
 
 fn draw_universe(universe: &Universe, grid_spacing: usize, alive_color: Color, dead_color: Color) {
