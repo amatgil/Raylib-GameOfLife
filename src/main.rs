@@ -15,7 +15,10 @@ async fn main() {
     let text_color               = Color::from_rgba(198, 160, 246, 200);
     let mut time_between_ticks   = 0.3;                                  // In seconds;
     let time_between_ticks_delta = 0.01;                                 // In seconds
-    let bare_universe = || Universe::new(screen_width() as usize / grid_spacing, screen_height() as usize / grid_spacing);
+
+    let uni_width = || screen_width() as usize / grid_spacing;
+    let uni_height = || screen_height() as usize / grid_spacing;
+    let bare_universe = || Universe::new(uni_width(), uni_height());
 
     // Simulation
     let mut universe = bare_universe();
@@ -25,6 +28,7 @@ async fn main() {
     // Main loop
     loop {
         clear_background(background_color);
+        universe.set_dimensions(Coord::new(uni_width(), uni_height()));
 
         let time_since_last_tick = frames_since_last_tick as f32 / get_fps() as f32;
 
@@ -44,8 +48,8 @@ async fn main() {
         if is_mouse_button_down(MouseButton::Left) {
             let (globl_x, globl_y) = mouse_position();
             universe.set_pixel(Coord::new(
-                globl_x as usize / grid_spacing,
-                globl_y as usize / grid_spacing),
+                (globl_x as usize / grid_spacing).min(uni_width() - 1),
+                (globl_y as usize / grid_spacing).min(uni_height() - 1)),
                                Cell::Alive);
         }
 
@@ -58,7 +62,7 @@ async fn main() {
 }
 
 fn draw_controls(text_color: Color, time_between_ticks: f32, paused: bool) {
-    let uni_fps = (time_between_ticks + 1.0) / (1.0/get_fps() as f32 + time_between_ticks);
+    let tps = (time_between_ticks + 1.0) / (1.0/get_fps() as f32 + time_between_ticks);
     let is_p = if paused { "Y" } else { "N" };
 
     draw_rectangle(0.0, 0.0,
@@ -68,7 +72,7 @@ fn draw_controls(text_color: Color, time_between_ticks: f32, paused: bool) {
     draw_text("D: Decrease Speed",                     10.0, 30.0 + 1.0*40.0, 40.0, text_color);
     draw_text("R: Reset",                              10.0, 30.0 + 2.0*40.0, 40.0, text_color);
     draw_text(&format!("Space: Pause ({is_p})"),       10.0, 30.0 + 3.0*40.0, 40.0, text_color);
-    draw_text(&format!("Speed: {uni_fps:.2} fps",),    10.0, 30.0 + 5.0*40.0, 40.0, text_color);
+    draw_text(&format!("Speed: {tps:.2} tps",),    10.0, 30.0 + 5.0*40.0, 40.0, text_color);
 }
 
 fn draw_universe(universe: &Universe, grid_spacing: usize, alive_color: Color, dead_color: Color) {
