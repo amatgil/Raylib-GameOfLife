@@ -4,6 +4,7 @@ use std::ops::{Index, IndexMut, Not};
 pub struct Universe {
     /// Flattened grid of Cells
     cells: Vec<Cell>,
+    back_buffer: Vec<Cell>,
     height: usize,
     width: usize,
 }
@@ -16,9 +17,7 @@ pub struct Coord {
 }
 
 impl Coord {
-    pub fn new(y: usize, x: usize) -> Coord {
-        Self { row: y, col: x } 
-    }
+    pub fn new(y: usize, x: usize) -> Coord { Self { row: y, col: x } }
 }
 
 #[repr(u8)]
@@ -29,23 +28,21 @@ pub enum Cell {
 }
 
 impl Cell {
-    fn is_alive(&self) -> bool {
-        *self == Cell::Alive
-    }
+    fn is_alive(&self) -> bool { *self == Cell::Alive }
 }
 
 impl Universe {
-    pub fn new(width: usize, height: usize) -> Self {
+    pub fn new(height: usize, width: usize) -> Self {
         let cells = vec![Cell::Dead; width*height];
-        Self { cells, height, width }
+        Self { cells: cells.clone(), back_buffer: cells, height, width }
     }
 
     pub fn set_dimensions(&mut self, new_dims: Coord) {
         let old = self.clone();
         let mut new = Self {
-            cells: vec![Cell::Dead; new_dims.row*new_dims.col],
-            height: new_dims.row,
-            width: new_dims.col,
+            cells:       vec![Cell::Dead; new_dims.row*new_dims.col],
+            back_buffer: vec![Cell::Dead; new_dims.row*new_dims.col],
+            height: new_dims.row, width: new_dims.col
         };
 
         for old_y in 0..(old.height.min(new.height)) {
@@ -57,36 +54,33 @@ impl Universe {
 
         *self = new;
     }
-    pub fn get_width(&self) -> usize {
-        self.width
-    }
-    pub fn get_height(&self) -> usize {
-        self.height
-    }
-    pub fn render(&self) -> String {
-        self.to_string()
-    }
-    pub fn toggle_pixel(&mut self, c: Coord) {
-        self[c] = !self[c];
-    }
-    pub fn set_pixel(&mut self, c: Coord, val: Cell) {
-        self[c] = val
-    }
+
+    pub fn get_width(&self) -> usize                 { self.width }
+    pub fn get_height(&self) -> usize                { self.height }
+    pub fn render(&self) -> String                   { self.to_string() }
+    pub fn toggle_pixel(&mut self, c: Coord)         { self[c] = !self[c]; }
+    pub fn set_pixel(&mut self, c: Coord, val: Cell) { self[c] = val }
 
     pub fn tick(&mut self) {
-        self.cells = (0..self.width).zip(0..self.height).map(|(x, y)| {
-            match (self[Coord::new(x, y)], self.alive_neighbor_count(x, y)) {
-                (Cell::Alive, x) if x < 2           => Cell::Dead,
-                (Cell::Alive, 2) | (Cell::Alive, 3) => Cell::Alive,
-                (Cell::Alive, x) if x > 3           => Cell::Dead,
-                (Cell::Dead, 3)                     => Cell::Alive,
-                (current, _)                        => current,
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let c = Coord::new(y, x);
+                let i = self.coord_to_idx(c);
+                self.back_buffer[i] =
+                    match (self[c], self.alive_neighbor_count(Coord::new(y, x))) {
+                        (Cell::Alive, x) if x < 2           => Cell::Dead,
+                        (Cell::Alive, 2) | (Cell::Alive, 3) => Cell::Alive,
+                        (Cell::Alive, x) if x > 3           => Cell::Dead,
+                        (Cell::Dead, 3)                     => Cell::Alive,
+                        (current, _)                        => current,
+                    }
             }
-        }).collect();
+        }
     }
 
-    fn alive_neighbor_count(&self, x: usize, y: usize) -> u8 {
+    fn alive_neighbor_count(&self, c: Coord) -> u8 {
         let mut cnt = 0;
+        let Coord { row: y, col: x } = c;
 
         for dy in [-1, 0, 1] {
             for dx in [-1, 0, 1] {
@@ -101,16 +95,8 @@ impl Universe {
         cnt
     }
 
-    fn coord_to_idx(&self, c: Coord) -> usize {
-        c.col + self.width * c.row
-    }
-
-    fn idx_to_coords(&self, i: usize) -> Coord {
-        Coord {
-            row: i / self.width,
-            col: i % self.width,
-        }
-    }
+    fn coord_to_idx(&self, c: Coord) -> usize { c.col + self.width * c.row }
+    fn idx_to_coords(&self, i: usize) -> Coord { Coord { row: i / self.width, col: i % self.width } }
 }
 
 impl std::fmt::Display for Cell {

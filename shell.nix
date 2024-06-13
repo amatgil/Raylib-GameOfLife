@@ -8,10 +8,17 @@ let
     rustfmt
     clippy
     mold
+    cmake
 
-    #wayland
-    #xorg.libX11
+    pkg-config
+    xorg.libX11
+    libGL
+    alsa-lib
+    xorg.libXi
+
     #xorg.libXcursor
+    #xorg.libXrandr
+    #xorg.libXinerama
   ];
 in
 pkgs.mkShell {
