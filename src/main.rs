@@ -1,4 +1,4 @@
-use ray_game_of_life::{Coord, Universe};
+use ray_game_of_life::{Cell, Coord, Universe};
 use macroquad::{prelude::*, text};
 
 
@@ -15,17 +15,13 @@ async fn main() {
     let text_color               = Color::from_rgba(198, 160, 246, 200);
     let mut time_between_ticks   = 0.3;                                  // In seconds;
     let time_between_ticks_delta = 0.01;                                 // In seconds
+    let bare_universe = Universe::new(screen_width() as usize / grid_spacing, screen_height() as usize / grid_spacing);
 
     // Simulation
-    let mut universe = Universe::new(screen_width() as usize / grid_spacing, screen_height() as usize / grid_spacing);
-    let mut paused = false;
+    let mut universe = bare_universe.clone();
+    let mut paused = true;
     let mut frames_since_last_tick = 0;
 
-    universe.toggle_pixel(Coord::new(8, 3));
-    universe.toggle_pixel(Coord::new(7, 4));
-    universe.toggle_pixel(Coord::new(7, 5));
-    universe.toggle_pixel(Coord::new(8, 5));
-    universe.toggle_pixel(Coord::new(9, 5));
     // Main loop
     loop {
         clear_background(background_color);
@@ -35,34 +31,44 @@ async fn main() {
         if !paused && (time_between_ticks < time_since_last_tick) {
             frames_since_last_tick = 0;
             universe.tick();
-        } else { frames_since_last_tick += 1; }
-
-        if is_key_pressed(KeyCode::Space)      { paused = !paused; }
-        if is_key_down(KeyCode::D)      {
-            time_between_ticks += time_between_ticks_delta;
+        } else {
+            frames_since_last_tick += 1;
         }
-        if is_key_down(KeyCode::U) {
+
+        if is_key_pressed(KeyCode::Space) { paused = !paused; }
+        if is_key_down(KeyCode::R)        { universe = bare_universe.clone(); }
+        if is_key_down(KeyCode::D)        { time_between_ticks += time_between_ticks_delta; }
+        if is_key_down(KeyCode::U)        {
             time_between_ticks = (time_between_ticks - time_between_ticks_delta).max(0.0);
+        }
+        if is_mouse_button_down(MouseButton::Left) {
+            let (globl_x, globl_y) = mouse_position();
+            universe.set_pixel(Coord::new(
+                globl_x as usize / grid_spacing,
+                globl_y as usize / grid_spacing),
+                               Cell::Alive);
         }
 
         draw_universe(&universe, grid_spacing, alive_color, dead_color);
         draw_grid(grid_thickness, grid_color, grid_spacing);
-        draw_controls(text_color, time_between_ticks);
+        draw_controls(text_color, time_between_ticks, paused);
 
         next_frame().await
     }
 }
 
-fn draw_controls(text_color: Color, time_between_ticks: f32) {
+fn draw_controls(text_color: Color, time_between_ticks: f32, paused: bool) {
     let uni_fps = (time_between_ticks + 1.0) / (1.0/get_fps() as f32 + time_between_ticks);
+    let is_p = if paused { "Y" } else { "N" };
 
     draw_rectangle(0.0, 0.0,
-                    320.0, 40.0*5.0,
+                    320.0, 40.0*6.0,
                     Color::from_rgba(0, 0, 0, 200));
-    draw_text("U: Increase Speed",              10.0, 30.0 + 0.0*40.0, 40.0, text_color);
-    draw_text("D: Decrease Speed",              10.0, 30.0 + 1.0*40.0, 40.0, text_color);
-    draw_text("Space: Pause",                   10.0, 30.0 + 2.0*40.0, 40.0, text_color);
-    draw_text(&format!("Speed: {uni_fps:.4} fps",),    10.0, 30.0 + 4.0*40.0, 40.0, text_color);
+    draw_text("U: Increase Speed",                     10.0, 30.0 + 0.0*40.0, 40.0, text_color);
+    draw_text("D: Decrease Speed",                     10.0, 30.0 + 1.0*40.0, 40.0, text_color);
+    draw_text("R: Reset",                              10.0, 30.0 + 2.0*40.0, 40.0, text_color);
+    draw_text(&format!("Space: Pause ({is_p})"),       10.0, 30.0 + 3.0*40.0, 40.0, text_color);
+    draw_text(&format!("Speed: {uni_fps:.2} fps",),    10.0, 30.0 + 5.0*40.0, 40.0, text_color);
 }
 
 fn draw_universe(universe: &Universe, grid_spacing: usize, alive_color: Color, dead_color: Color) {
@@ -97,12 +103,8 @@ fn window_conf() -> Conf {
         window_title: "Game of Life".to_owned(),
         fullscreen: false,
         window_resizable: false,
-        window_width: 720,
-        window_height: 480,
+        window_width: 1080,
+        window_height: 720,
         ..Default::default()
     }
 }
-
-        //draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
-        //draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
-        //draw_text("HELLO", 20.0, 20.0, 20.0, DARKGRAY);
