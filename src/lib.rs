@@ -1,9 +1,9 @@
-use std::ops::{Index, IndexMut, Not};
+use std::{mem::swap, ops::{Index, IndexMut, Not}};
 
 #[derive(Clone, Debug)]
 pub struct Universe {
     /// Flattened grid of Cells
-    cells: Vec<Cell>,
+    pub cells: Vec<Cell>,
     back_buffer: Vec<Cell>,
     height: usize,
     width: usize,
@@ -12,8 +12,8 @@ pub struct Universe {
 /// Coordinates, stored as a (row, column) tuple
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Coord {
-    row: usize, 
-    col: usize,
+    pub row: usize, 
+    pub col: usize,
 }
 
 impl Coord {
@@ -36,6 +36,8 @@ impl Universe {
         let cells = vec![Cell::Dead; width*height];
         Self { cells: cells.clone(), back_buffer: cells, height, width }
     }
+
+    pub fn is_alive(&self, c: Coord) -> bool { self[c].is_alive() }
 
     pub fn set_dimensions(&mut self, new_dims: Coord) {
         let old = self.clone();
@@ -76,6 +78,7 @@ impl Universe {
                     }
             }
         }
+        swap(&mut self.cells, &mut self.back_buffer);
     }
 
     fn alive_neighbor_count(&self, c: Coord) -> u8 {
@@ -95,8 +98,8 @@ impl Universe {
         cnt
     }
 
-    fn coord_to_idx(&self, c: Coord) -> usize { c.col + self.width * c.row }
-    fn idx_to_coords(&self, i: usize) -> Coord { Coord { row: i / self.width, col: i % self.width } }
+    pub fn coord_to_idx(&self, c: Coord) -> usize { c.col + self.width * c.row }
+    pub fn idx_to_coords(&self, i: usize) -> Coord { Coord { row: i / self.width, col: i % self.width } }
 }
 
 impl std::fmt::Display for Cell {
