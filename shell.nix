@@ -1,6 +1,7 @@
 {
   pkgs ? import <nixpkgs> { },
   lib,
+  overlays
 }:
 let
   packages = with pkgs; [
@@ -16,10 +17,11 @@ let
     alsa-lib
     xorg.libXi
 
-    #xorg.libXcursor
-    #xorg.libXrandr
-    #xorg.libXinerama
+    (rust-bin.stable.latest.default.override {
+      targets = [ "wasm32-unknown-unknown" ];
+    })
   ];
+
 in
 pkgs.mkShell {
   # Get dependencies from the main package
